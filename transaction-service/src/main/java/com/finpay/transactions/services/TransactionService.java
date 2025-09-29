@@ -48,6 +48,21 @@ public class TransactionService {
         this.transactionProducer = transactionProducer;
     }
 
+    /**
+     * Idempotence : Utilise une clé d'idempotence (idempotencyKey) pour éviter les transactions en double :
+     *
+     * Vérifie si une transaction avec la même clé existe dans la base de données.
+     * Si elle existe :
+     *
+     * Si son statut est COMPLETED ou PENDING, retourne les détails de la transaction existante.
+     * Si son statut est FAILED, relance la transaction via retryPayment.
+     *
+     *
+     * Si aucune transaction n'existe, crée une nouvelle transaction avec le statut PENDING, l'enregistre, et la traite.
+     * @param idempotencyKey
+     * @param request
+     * @return
+     */
     @Transactional
     public TransactionResponse transfer(String idempotencyKey, TransferRequest request) {
         log.info("Processing transfer request | key={} | from={} | to={} | amount={}",
@@ -89,6 +104,35 @@ public class TransactionService {
         return processAndSave(tx, request);
     }
 
+    /**
+     * Objectif : Exécute la logique de transfert, incluant le débit/crédit des comptes, la publication d'événements et l'envoi de notifications.
+     * Étapes :
+     *
+     * Récupérer les détails du compte : Appelle accountClient.getAccount pour obtenir les informations du compte émetteur (par exemple, l'email du propriétaire).
+     * Publier un événement : Envoie un événement TransactionCreatedEvent (avec l'ID, le montant et l'email du propriétaire) via transactionProducer.
+     * Débit/Crédit :
+     *
+     * Débite le compte émetteur via accountClient.debit.
+     * Crédite le compte destinataire via accountClient.credit.
+     *
+     *
+     * Succès :
+     *
+     * Définit le statut de la transaction à COMPLETED.
+     * Envoie une notification de succès via notificationClient.
+     *
+     *
+     * Échec :
+     *
+     * En cas d'exception (par exemple, fonds insuffisants, erreur réseau), définit le statut à FAILED.
+     * Journalise l'erreur et envoie une notification d'échec.
+     *
+     *
+     * Enregistrement et retour : Enregistre la transaction mise à jour et retourne un TransactionResponse.
+     * @param tx
+     * @param request
+     * @return
+     */
     @Transactional
     private TransactionResponse processAndSave(Transaction tx, TransferRequest request) {
         AccountDto accDto = accountClient.getAccount(request.getFromAccountId());
