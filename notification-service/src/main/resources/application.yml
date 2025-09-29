@@ -1,0 +1,38 @@
+server:
+    port: 8084
+
+spring:
+    application:
+        name: notification-service
+    datasource:
+        url: jdbc:postgresql://localhost:5432/finpay
+        username: finpay
+        password: finpay
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            public-key-location: classpath:keys/public.pem
+    mail:
+      host: sandbox.smtp.mailtrap.io
+      port: 587
+      username: c7e6aa1d22900d
+      password: 59a424b211ee44
+      properties:
+        mail:
+          smtp:
+            auth: true
+            starttls:
+              enable: true
+    kafka:
+      bootstrap-servers: localhost:9092
+      consumer:
+        group-id: notification-service-group
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+        properties:
+          spring.json.trusted.packages: com.finpay.common.dto.transactions

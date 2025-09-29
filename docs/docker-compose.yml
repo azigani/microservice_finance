@@ -1,0 +1,52 @@
+version: '3.9'
+services:
+  gateway:
+    image: yourrepo/finpay-gateway:latest
+    ports: ['8080:8080']
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    depends_on: [account, transaction, notification, kafka, postgres, redis]
+  account:
+    image: yourrepo/finpay-account:latest
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/finpay
+    depends_on: [postgres]
+  transaction:
+    image: yourrepo/finpay-transaction:latest
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/finpay
+      - SPRING_REDIS_HOST=redis
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on: [postgres, redis, kafka]
+  notification:
+    image: yourrepo/finpay-notification:latest
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on: [kafka]
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: finpay
+      POSTGRES_USER: finpay
+      POSTGRES_PASSWORD: finpay
+    ports: ['5432:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+  redis:
+    image: redis:7
+    ports: ['6379:6379']
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports: ['2181:2181']
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    ports: ['9092:9092']
+    depends_on: [zookeeper]
+volumes:
+  pgdata: {}

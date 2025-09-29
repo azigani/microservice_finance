@@ -1,0 +1,43 @@
+server:
+    port: 8083
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+    zipkin:
+      base-url: http://localhost:9411
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+
+spring:
+    application:
+        name: transaction-service
+    datasource:
+        url: jdbc:postgresql://localhost:5432/finpay
+        username: finpay
+        password: finpay
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            public-key-location: classpath:keys/public.pem
+    kafka:
+      bootstrap-servers: localhost:9092
+      producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+logging:
+  pattern:
+    level: "%5p [traceId=%X{traceId}, spanId=%X{spanId}, user=%X{userId}]"

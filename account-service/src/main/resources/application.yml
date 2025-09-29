@@ -1,0 +1,19 @@
+server:
+    port: 8082
+
+spring:
+    application:
+        name: account-service
+    datasource:
+        url: jdbc:postgresql://localhost:5432/finpay
+        username: finpay
+        password: finpay
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            public-key-location: classpath:keys/public.pem

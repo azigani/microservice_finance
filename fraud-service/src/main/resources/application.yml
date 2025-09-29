@@ -1,0 +1,36 @@
+server:
+    port: 8085
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+
+spring:
+    application:
+        name: fraud-service
+    datasource:
+        url: jdbc:postgresql://localhost:5432/finpay
+        username: finpay
+        password: finpay
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            public-key-location: classpath:keys/public.pem
+    kafka:
+      bootstrap-servers: localhost:9092
+      consumer:
+        group-id: fraud-service-group
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+        properties:
+          spring.json.trusted.packages: com.finpay.common.dto.transactions

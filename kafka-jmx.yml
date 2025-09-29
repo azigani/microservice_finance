@@ -1,0 +1,13 @@
+startDelaySeconds: 0
+jmxUrl: service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: "kafka.server<type=(.+), name=(.+)PerSec\\, topic=(.+)><>Count"
+    name: kafka_$1_$2_total
+    labels:
+      topic: "$3"
+    type: COUNTER
+  - pattern: "kafka.server<type=(.+), name=(.+)><>Value"
+    name: kafka_$1_$2
+    type: GAUGE

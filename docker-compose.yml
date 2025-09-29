@@ -1,0 +1,250 @@
+#services:
+#    postgres:
+#        image: postgres:16
+#        environment:
+#            POSTGRES_DB: finpay
+#            POSTGRES_USER: finpay
+#            POSTGRES_PASSWORD: finpay
+#        ports:
+#            - "5432:5432"
+#        volumes:
+#            - postgres_data:/var/lib/postgresql/data
+#    pgadmin:
+#        image: dpage/pgadmin4:latest
+#        container_name: pgadmin
+#        environment:
+#            - PGADMIN_DEFAULT_EMAIL=admin@example.com
+#            - PGADMIN_DEFAULT_PASSWORD=finpay
+#            - PGADMIN_CONFIG_SERVER_MODE=False
+#        ports:
+#            - "5050:80"
+#        depends_on:
+#            - postgres
+#    redis:
+#        image: redis:7
+#        ports:
+#            - "6379:6379"
+#
+#    zookeeper:
+#        image: confluentinc/cp-zookeeper:7.6.0
+#        environment:
+#            ZOOKEEPER_CLIENT_PORT: 2181
+#            ZOOKEEPER_TICK_TIME: 2000
+#        ports:
+#            - "2181:2181"
+#
+#    kafka:
+#        image: bitnami/kafka:3.7.2-debian-12-r2
+#        environment:
+#            KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+#            ALLOW_PLAINTEXT_LISTENER: "yes"
+#            KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+#            KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+#            # Enable JMX for Kafka
+#            JMX_PORT: 9999
+#            KAFKA_JMX_OPTS: >
+#              -Dcom.sun.management.jmxremote
+#              -Dcom.sun.management.jmxremote.port=9999
+#              -Dcom.sun.management.jmxremote.rmi.port=9999
+#              -Dcom.sun.management.jmxremote.authenticate=false
+#              -Dcom.sun.management.jmxremote.ssl=false
+#              -Djava.rmi.server.hostname=kafka
+#        ports:
+#            - "9092:9092"
+#            - "9999:9999"
+#        depends_on:
+#            - zookeeper
+#    zipkin:
+#        image: openzipkin/zipkin
+#        ports:
+#            - "9411:9411"
+#    prometheus:
+#      image: prom/prometheus:latest
+#      container_name: prometheus
+#      volumes:
+#        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+#      ports:
+#        - "9090:9090"
+#
+#    grafana:
+#      image: grafana/grafana:latest
+#      container_name: grafana
+#      ports:
+#        - "3000:3000"
+#      depends_on:
+#        - prometheus
+#      environment:
+#        - GF_SECURITY_ADMIN_USER=admin
+#        - GF_SECURITY_ADMIN_PASSWORD=admin
+#
+#    kafka-jmx-exporter:
+#      image: sscaling/jmx-prometheus-exporter
+#      ports:
+#        - "7071:7071"
+#      environment:
+#        SERVICE_PORT: 7071
+#        CONFIG_YML: /config/kafka-jmx.yml
+#      volumes:
+#        - ./kafka-jmx.yml:/config/kafka-jmx.yml
+#      depends_on:
+#        - kafka
+#
+#    elasticsearch:
+#      image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+#      container_name: elasticsearch
+#      environment:
+#        - discovery.type=single-node
+#        - xpack.security.enabled=false
+#        - ES_JAVA_OPTS=-Xms512m -Xmx512m
+#      ports:
+#        - "9200:9200"
+#        - "9300:9300"
+#      volumes:
+#        - elasticsearch_data:/usr/share/elasticsearch/data
+#
+#    kibana:
+#      image: docker.elastic.co/kibana/kibana:8.10.2
+#      container_name: kibana
+#      environment:
+#        - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#      ports:
+#        - "5601:5601"
+#      depends_on:
+#        - elasticsearch
+#
+#    logstash:
+#      image: docker.elastic.co/logstash/logstash:8.10.2
+#      container_name: logstash
+#      ports:
+#        - "5001:5000"
+#      volumes:
+#        - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+#      depends_on:
+#        - elasticsearch
+#
+#volumes:
+#    postgres_data:
+#    elasticsearch_data:
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: finpay
+      POSTGRES_USER: finpay
+      POSTGRES_PASSWORD: finpay
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=finpay
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/data
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0  # Stable, compatible avec Zookeeper
+    container_name: kafka
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+    ports:
+      - "9092:9092"
+      - "9999:9999"
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+  kafka-jmx-exporter:
+    image: sscaling/jmx-prometheus-exporter
+    ports:
+      - "7071:7071"
+    environment:
+      SERVICE_PORT: 7071
+      CONFIG_YML: /config/kafka-jmx.yml
+    volumes:
+      - ./kafka-jmx.yml:/config/kafka-jmx.yml
+    depends_on:
+      - kafka
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.2
+    container_name: logstash
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - elasticsearch
+
+volumes:
+  postgres_data:
+  elasticsearch_data:
+  kafka_data:
+  zookeeper_data:
